@@ -3,10 +3,11 @@ import './App.css';
 
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
+import * as dat from 'dat.gui';
 
-let camera, scene, renderer;
 
 export const App = () => {
+    let camera, scene, renderer;
 
     const params = {
         clipIntersection: true,
@@ -15,90 +16,107 @@ export const App = () => {
     };
 
     const clipPlanes = [
-        new THREE.Plane(new THREE.Vector3(0, 0, 10), 0), // z1
-        new THREE.Plane(new THREE.Vector3(0, 4, 0), 0), // y1
-        new THREE.Plane(new THREE.Vector3(4, 0, 0), 0),// x1
-        new THREE.Plane(new THREE.Vector3(-4, 0, 0), 0), // x2
-        new THREE.Plane(new THREE.Vector3(0, -4, 0), 0),// y2
-        new THREE.Plane(new THREE.Vector3(0, 0, -10), 0), // z2
+        new THREE.Plane(new THREE.Vector3(0.5, 0, 0), 1),
+        new THREE.Plane(new THREE.Vector3(0, -0.5, 0), 1),
+        new THREE.Plane(new THREE.Vector3(0, 0, -0.5), 1),
+        new THREE.Plane(new THREE.Vector3(0, 0, 0.5), 1),
+        new THREE.Plane(new THREE.Vector3(0, 0.5, 0), 1),
+        new THREE.Plane(new THREE.Vector3(0.5, 0, 0), 1),
     ];
 
+    useEffect(() => {
+        init();
+        render();
+    }, []);
+
     function init() {
+        renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.localClippingEnabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 200);
+        camera.position.set(-1.5, 2.5, 3.0);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.addEventListener('change', render); // use only if there is no animation loop
+        controls.minDistance = 1;
+        controls.maxDistance = 10;
+        controls.enablePan = false;
+
+        const light = new THREE.HemisphereLight(0xffffff, 0x080808, 1.5);
+        light.position.set(-1.25, 1, 1.25);
+        scene.add(light);
+
+        const group = new THREE.Group();
+
+        for (let i = 1; i <= 30; i += 2) {
+            const geometry = new THREE.SphereGeometry(i / 30, 48, 24);
+            const material = new THREE.MeshLambertMaterial({
+                color: new THREE.Color().setHSL(Math.random(), 0.5, 0.5),
+                side: THREE.DoubleSide,
+                clippingPlanes: clipPlanes,
+                clipIntersection: params.clipIntersection,
+            });
+
+            group.add(new THREE.Mesh(geometry, material));
+        }
+
+        scene.add(group);
+
+        // helpers
+        const helpers = new THREE.Group();
+        helpers.add(new THREE.PlaneHelper(clipPlanes[0], 2, 0xff0000));
+        helpers.add(new THREE.PlaneHelper(clipPlanes[1], 2, 0x00ff00));
+        helpers.add(new THREE.PlaneHelper(clipPlanes[2], 2, 0x0000ff));
+        helpers.add(new THREE.PlaneHelper(clipPlanes[3], 2, 0x00FFFF));
+        helpers.add(new THREE.PlaneHelper(clipPlanes[4], 2, 0x008080));
+        helpers.add(new THREE.PlaneHelper(clipPlanes[5], 2, 0x000080));
+        helpers.visible = false;
+        scene.add(helpers);
+
+        // gui
+        const gui = new dat.GUI();
+
+        gui.add(params, 'clipIntersection').name('clip intersection').onChange(function (value) {
+            const children = group.children;
+            for (let i = 0; i < children.length; i++) {
+                children[i].material.clipIntersection = value;
+            }
+
+            render();
+        });
+
+        gui.add(params, 'planeConstant', -1, 1).step(0.01).name('plane constant').onChange(function (value) {
+            for (let j = 0; j < clipPlanes.length; j++) {
+                clipPlanes[j].constant = -value;
+            }
+
+            render();
+        });
+
+        gui.add(params, 'showHelpers').name('show helpers').onChange(function (value) {
+            helpers.visible = value;
+
+            render();
+        });
+
+        window.addEventListener('resize', onWindowResize);
 
     }
 
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer();
-    const controls = new OrbitControls(camera, renderer.domElement);
+        render();
+    }
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(devicePixelRatio);
-    renderer.setClearColor(0xffffff, 1);
-
-    camera.position.set(10, 5, 20);
-    controls.update();
-
-    const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
-    const boxMaterial = new THREE.MeshBasicMaterial({color: 0x00FF00});
-    const mesh = new THREE.Mesh(boxGeometry, boxMaterial);
-    scene.add(mesh);
-
-    const planeGeometry = new THREE.PlaneGeometry(15, 15, 10, 10);
-    const planeMaterial = new THREE.MeshPhongMaterial({
-        color: 0xFF0000,
-        side: THREE.DoubleSide,
-        flatShading: THREE.FlatShading,
-    });
-    const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-    scene.add(planeMesh);
-
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(0, 0, 1);
-    scene.add(light);
-
-    const localPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1);
-
-
-    const globalPlaneZ1 = new THREE.Plane(new THREE.Vector3(0, 0, 10), 1);
-    const globalPlaneY1 = new THREE.Plane(new THREE.Vector3(0, 4, 0), 1);
-    const globalPlaneX1 = new THREE.Plane(new THREE.Vector3(4, 0, 0), 1);
-    const globalPlaneX2 = new THREE.Plane(new THREE.Vector3(-4, 0, 0), 1);
-    const globalPlaneY2 = new THREE.Plane(new THREE.Vector3(0, -4, 0), 1);
-    const globalPlaneZ2 = new THREE.Plane(new THREE.Vector3(0, 0, -10), 1);
-
-    renderer.clippingPlanes = [globalPlaneZ1, globalPlaneY1, globalPlaneX1, globalPlaneX2, globalPlaneY2, globalPlaneZ2];
-    renderer.localClippingEnabled = true;
-
-    const clippingMaterial = new THREE.MeshPhongMaterial({
-        clippingPlanes: [localPlane],
-        clipShadows: true,
-    });
-
-
-    useEffect(() => {
-        document.body.appendChild(renderer.domElement);
+    function render() {
         renderer.render(scene, camera);
-        animate();
-
-        return () => {
-            document.body.removeChild(renderer.domElement);
-        };
-    }, []);
-
-
-    function animate() {
-        requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-        // mesh.rotation.x += .002;
-        // mesh.rotation.y += .005;
-        // mesh.rotation.z += .009;
-        //
-        // planeMesh.rotation.x += .004;
-        // planeMesh.rotation.y += .008;
-        // planeMesh.rotation.z += .002;
     }
 
 
