@@ -1,83 +1,104 @@
-import { useEffect } from 'react';
+import {useEffect} from 'react';
 import './App.css';
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 
-import { gui } from './core/components/gui.component'
+let camera, scene, renderer;
 
+export const App = () => {
 
-export const App = ( ) => {
-    const world = {
-        plane: {
-            width: 10,
-            height: 10
-        }
+    const params = {
+        clipIntersection: true,
+        planeConstant: 0,
+        showHelpers: false,
     };
+
+    const clipPlanes = [
+        new THREE.Plane(new THREE.Vector3(0, 0, 10), 0), // z1
+        new THREE.Plane(new THREE.Vector3(0, 4, 0), 0), // y1
+        new THREE.Plane(new THREE.Vector3(4, 0, 0), 0),// x1
+        new THREE.Plane(new THREE.Vector3(-4, 0, 0), 0), // x2
+        new THREE.Plane(new THREE.Vector3(0, -4, 0), 0),// y2
+        new THREE.Plane(new THREE.Vector3(0, 0, -10), 0), // z2
+    ];
+
+    function init() {
+
+    }
+
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const rendered = new THREE.WebGLRenderer();
+    const renderer = new THREE.WebGLRenderer();
+    const controls = new OrbitControls(camera, renderer.domElement);
 
-    rendered.setSize(window.innerWidth, window.innerHeight);
-    rendered.setPixelRatio(devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(devicePixelRatio);
+    renderer.setClearColor(0xffffff, 1);
 
-    camera.position.z = 5;
+    camera.position.set(10, 5, 20);
+    controls.update();
 
-    const planeGeometry = new THREE.PlaneGeometry(4, 4, 10, 10);
-    const planeMaterial = new THREE.MeshPhongMaterial({ color: 0xFF0000, side: THREE.DoubleSide, flatShading: THREE.FlatShading });
+    const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
+    const boxMaterial = new THREE.MeshBasicMaterial({color: 0x00FF00});
+    const mesh = new THREE.Mesh(boxGeometry, boxMaterial);
+    scene.add(mesh);
+
+    const planeGeometry = new THREE.PlaneGeometry(15, 15, 10, 10);
+    const planeMaterial = new THREE.MeshPhongMaterial({
+        color: 0xFF0000,
+        side: THREE.DoubleSide,
+        flatShading: THREE.FlatShading,
+    });
     const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+    scene.add(planeMesh);
 
-        // const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-        // const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x00FF00 });
-        // const mesh = new THREE.Mesh(boxGeometry, boxMaterial);
-        // scene.add(mesh);
-        scene.add(planeMesh);
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(0, 0, 1);
+    scene.add(light);
 
-        const { array } = planeMesh.geometry.attributes.position;
-        for (let i = 0; i < array.length; i += 3) {
-            const z = array[i + 2];
+    const localPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1);
 
-            array[i + 2] = z + Math.random();
-        }
 
-        const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(0, 0, 1);
-        scene.add(light);
+    const globalPlaneZ1 = new THREE.Plane(new THREE.Vector3(0, 0, 10), 1);
+    const globalPlaneY1 = new THREE.Plane(new THREE.Vector3(0, 4, 0), 1);
+    const globalPlaneX1 = new THREE.Plane(new THREE.Vector3(4, 0, 0), 1);
+    const globalPlaneX2 = new THREE.Plane(new THREE.Vector3(-4, 0, 0), 1);
+    const globalPlaneY2 = new THREE.Plane(new THREE.Vector3(0, -4, 0), 1);
+    const globalPlaneZ2 = new THREE.Plane(new THREE.Vector3(0, 0, -10), 1);
+
+    renderer.clippingPlanes = [globalPlaneZ1, globalPlaneY1, globalPlaneX1, globalPlaneX2, globalPlaneY2, globalPlaneZ2];
+    renderer.localClippingEnabled = true;
+
+    const clippingMaterial = new THREE.MeshPhongMaterial({
+        clippingPlanes: [localPlane],
+        clipShadows: true,
+    });
 
 
     useEffect(() => {
-        // if (!gui.__controllers.find(controller => controller.property === 'width')) {
-            gui.add(world.plane, 'width', 1, 500).onChange(() => {
-                planeMesh.geometry.dispose();
-                planeMesh.geometry = new THREE.PlaneGeometry(world.plane.width, 4, 10)
-
-                const { array } = planeMesh.geometry.attributes.position;
-                for (let i = 0; i < array.length; i += 3) {
-                    const z = array[i + 2];
-
-                    array[i + 2] = z + Math.random();
-                }
-            });
-        // }
-
-
-        document.body.appendChild(rendered.domElement);
-        // rendered.render(scene, camera);
+        document.body.appendChild(renderer.domElement);
+        renderer.render(scene, camera);
         animate();
 
         return () => {
-            document.body.removeChild(rendered.domElement);
+            document.body.removeChild(renderer.domElement);
         };
     }, []);
 
 
     function animate() {
         requestAnimationFrame(animate);
-        rendered.render(scene, camera);
-    // mesh.rotation.x += .002;
-    // mesh.rotation.y += .005;
-    // mesh.rotation.z += .009;
+        controls.update();
+        renderer.render(scene, camera);
+        // mesh.rotation.x += .002;
+        // mesh.rotation.y += .005;
+        // mesh.rotation.z += .009;
+        //
+        // planeMesh.rotation.x += .004;
+        // planeMesh.rotation.y += .008;
+        // planeMesh.rotation.z += .002;
     }
 
 
