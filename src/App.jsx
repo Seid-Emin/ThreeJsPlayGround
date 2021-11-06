@@ -11,17 +11,21 @@ export const App = () => {
 
     const params = {
         clipIntersection: true,
-        planeConstant: 0,
-        showHelpers: false,
+        planeConstant: {
+            x: 1,
+            y: -1,
+            z: -1
+        },
+        showHelpers: true,
     };
 
     const clipPlanes = [
-        new THREE.Plane(new THREE.Vector3(0.5, 0, 0), 1),
-        new THREE.Plane(new THREE.Vector3(0, -0.5, 0), 1),
-        new THREE.Plane(new THREE.Vector3(0, 0, -0.5), 1),
-        new THREE.Plane(new THREE.Vector3(0, 0, 0.5), 1),
-        new THREE.Plane(new THREE.Vector3(0, 0.5, 0), 1),
-        new THREE.Plane(new THREE.Vector3(0.5, 0, 0), 1),
+        new THREE.Plane(new THREE.Vector3(1, 0, 0), params.planeConstant.x),
+        new THREE.Plane(new THREE.Vector3(0, -1, 0), params.planeConstant.x),
+        new THREE.Plane(new THREE.Vector3(0, 0, -1), params.planeConstant.x),
+        // new THREE.Plane(new THREE.Vector3(0, 0, 1), -1),
+        // new THREE.Plane(new THREE.Vector3(0, 1, 0), -1),
+        // new THREE.Plane(new THREE.Vector3(1, 0, 0), -1),
     ];
 
     useEffect(() => {
@@ -38,7 +42,7 @@ export const App = () => {
 
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 200);
-        camera.position.set(-1.5, 2.5, 3.0);
+        camera.position.set(3, 4, 3.0);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.addEventListener('change', render); // use only if there is no animation loop
@@ -71,10 +75,10 @@ export const App = () => {
         helpers.add(new THREE.PlaneHelper(clipPlanes[0], 2, 0xff0000));
         helpers.add(new THREE.PlaneHelper(clipPlanes[1], 2, 0x00ff00));
         helpers.add(new THREE.PlaneHelper(clipPlanes[2], 2, 0x0000ff));
-        helpers.add(new THREE.PlaneHelper(clipPlanes[3], 2, 0x00FFFF));
-        helpers.add(new THREE.PlaneHelper(clipPlanes[4], 2, 0x008080));
-        helpers.add(new THREE.PlaneHelper(clipPlanes[5], 2, 0x000080));
-        helpers.visible = false;
+        // helpers.add(new THREE.PlaneHelper(clipPlanes[3], 2, 0x00FFFF));
+        // helpers.add(new THREE.PlaneHelper(clipPlanes[4], 2, 0x008080));
+        // helpers.add(new THREE.PlaneHelper(clipPlanes[5], 2, 0x000080));
+        helpers.visible = true;
         scene.add(helpers);
 
         // gui
@@ -89,13 +93,56 @@ export const App = () => {
             render();
         });
 
-        gui.add(params, 'planeConstant', -1, 1).step(0.01).name('plane constant').onChange(function (value) {
-            for (let j = 0; j < clipPlanes.length; j++) {
-                clipPlanes[j].constant = -value;
-            }
+        // gui.add(params, 'planeConstant', -1, 1).step(0.01).name('plane constant').onChange(function (value) {
+        //     for (let j = 0; j < clipPlanes.length; j++) {
+        //         clipPlanes[j].constant = value;
+        //     }
+        //
+        //     render();
+        // });
+
+        gui.add(params.planeConstant, 'x', -1, 1).step(0.01).name('plane constant x1 ').onChange(function (value) {
+            // for (let j = 0; j < clipPlanes.length; j++) {
+                clipPlanes[0].constant = value;
+            // }
 
             render();
         });
+        gui.add(params.planeConstant, 'y', -1, 1).step(0.01).name('plane constant y1').onChange(function (value) {
+            // for (let j = 0; j < clipPlanes.length; j++) {
+                clipPlanes[1].constant = value;
+            // }
+
+            render();
+        });
+        gui.add(params.planeConstant, 'z', -1, 1).step(0.01).name('plane constant z1').onChange(function (value) {
+            // for (let j = 0; j < clipPlanes.length; j++) {
+                clipPlanes[2].constant = value;
+            // }
+
+            render();
+        });
+        // gui.add(params, 'planeConstant', -1, 1).step(0.01).name('plane constant z2').onChange(function (value) {
+        //     // for (let j = 0; j < clipPlanes.length; j++) {
+        //         clipPlanes[3].constant = value;
+        //     // }
+        //
+        //     render();
+        // });
+        // gui.add(params, 'planeConstant', -1, 1).step(0.01).name('plane constant y2').onChange(function (value) {
+        //     // for (let j = 0; j < clipPlanes.length; j++) {
+        //         clipPlanes[4].constant = value;
+        //     // }
+        //
+        //     render();
+        // });
+        // gui.add(params, 'planeConstant', -1, 1).step(0.01).name('plane constant x2').onChange(function (value) {
+        //     // for (let j = 0; j < clipPlanes.length; j++) {
+        //         clipPlanes[5].constant = value;
+        //     // }
+        //
+        //     render();
+        // });
 
         gui.add(params, 'showHelpers').name('show helpers').onChange(function (value) {
             helpers.visible = value;
