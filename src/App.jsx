@@ -5,23 +5,25 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import * as dat from 'dat.gui';
 
+let camera, scene, renderer, gui;
+
 
 export const App = () => {
-    let camera, scene, renderer, gui;
-
     const params = {
-        clipIntersection: true, planeConstant: {
+        clipIntersection: true,
+        planeConstant: {
             x1: 1, y1: 1, z1: 1, x2: 1, y2: 1, z2: 1,
-        }, showHelpers: true,
+        },
+        showHelpers: true,
     };
 
     const clipPlanes = [
         new THREE.Plane(new THREE.Vector3(-1, 0, 0), params.planeConstant.x1),
+        new THREE.Plane(new THREE.Vector3(1, 0, 0), params.planeConstant.x2),
         new THREE.Plane(new THREE.Vector3(0, -1, 0), params.planeConstant.y1),
-        new THREE.Plane(new THREE.Vector3(0, 0, -1), params.planeConstant.z1),
-        new THREE.Plane(new THREE.Vector3(0, 0, 1), params.planeConstant.z2),
         new THREE.Plane(new THREE.Vector3(0, 1, 0), params.planeConstant.y2),
-        new THREE.Plane(new THREE.Vector3(1, 0, 0), params.planeConstant.x2)
+        new THREE.Plane(new THREE.Vector3(0, 0, -1), params.planeConstant.z1),
+        new THREE.Plane(new THREE.Vector3(0, 0, 1), params.planeConstant.z2)
     ];
 
     function init() {
@@ -45,15 +47,14 @@ export const App = () => {
 
         const light = new THREE.HemisphereLight(0xffffff, 0x080808, 1.5);
         light.position.set(-1.25, 1, 1.25);
-        scene.add(light);
 
         const group = new THREE.Group();
 
         for (let i = 1; i <= 30; i += 2) {
             const geometry = new THREE.SphereGeometry(i / 30, 48, 24);
             const material = new THREE.MeshLambertMaterial({
-                color: new THREE.Color().setHSL(Math.random(), 0.5, 0.5), side: THREE.DoubleSide, // clippingPlanes: clipPlanes,
-                // clipIntersection: params.clipIntersection,
+                color: new THREE.Color().setHSL(Math.random(), 0.5, 0.5),
+                side: THREE.DoubleSide,
             });
 
             group.add(new THREE.Mesh(geometry, material));
@@ -83,14 +84,6 @@ export const App = () => {
 
             render();
         });
-
-        // gui.add(params, 'planeConstant', -1, 1).step(0.01).name('plane constant').onChange(function (value) {
-        //     for (let j = 0; j < clipPlanes.length; j++) {
-        //         clipPlanes[j].constant = value;
-        //     }
-        //
-        //     render();
-        // });
 
         gui.add(params.planeConstant, 'x1', -1, 1).step(0.01).name('plane constant x1 ').onChange(function (value) {
             clipPlanes[0].constant = value;
@@ -141,11 +134,6 @@ export const App = () => {
     }
 
     function render() {
-        for (let i in gui.__controllers) {
-            gui.__controllers[i].updateDisplay();
-        }
-
-
         renderer.render(scene, camera);
     }
 
